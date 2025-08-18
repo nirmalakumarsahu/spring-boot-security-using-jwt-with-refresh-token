@@ -1,5 +1,6 @@
 package com.sahu.springboot.security.service.impl;
 
+import com.sahu.springboot.security.dto.RefreshTokenRequest;
 import com.sahu.springboot.security.model.RefreshToken;
 import com.sahu.springboot.security.repository.RefreshTokenRepository;
 import com.sahu.springboot.security.repository.UserRepository;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -38,6 +40,22 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                             .expiryDate(Instant.now().plusMillis(refreshTokenDuration))
                             .build());
         }).orElseThrow(() -> new RuntimeException("User not found: " + username));
+    }
+
+    @Override
+    public Optional<RefreshToken> findByToken(String token) {
+        return refreshTokenRepository.findByToken(token);
+    }
+
+    @Override
+    public RefreshToken verifyRefreshToken(RefreshToken refreshToken) {
+        if (refreshToken.getExpiryDate().isBefore(Instant.now())) {
+            refreshTokenRepository.delete(refreshToken);
+
+            throw new RuntimeException("Refresh token expired");
+        }
+
+        return refreshToken;
     }
 
 }
