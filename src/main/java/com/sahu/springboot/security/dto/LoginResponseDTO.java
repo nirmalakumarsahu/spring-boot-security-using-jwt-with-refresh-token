@@ -8,7 +8,8 @@ import java.util.Date;
 public record LoginResponseDTO(
       String token,
       String tokenType,
-      Date expirationDate
+      Date expirationDate,
+      String refreshToken
 )
 {
 }
