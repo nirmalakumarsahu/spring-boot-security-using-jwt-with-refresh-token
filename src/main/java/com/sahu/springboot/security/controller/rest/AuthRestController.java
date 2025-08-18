@@ -2,8 +2,11 @@ package com.sahu.springboot.security.controller.rest;
 
 import com.sahu.springboot.security.constant.AuthConstants;
 import com.sahu.springboot.security.dto.*;
+import com.sahu.springboot.security.model.RefreshToken;
 import com.sahu.springboot.security.model.User;
+import com.sahu.springboot.security.security.dto.CustomUserDetails;
 import com.sahu.springboot.security.security.util.JwtTokenProvider;
+import com.sahu.springboot.security.security.util.SecurityUtil;
 import com.sahu.springboot.security.service.RefreshTokenService;
 import com.sahu.springboot.security.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,21 +37,22 @@ public class AuthRestController {
     private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponseDTO>> login(@RequestBody LoginRequestDTO loginRequestDTO, HttpServletRequest httpServletRequest) {
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest loginRequest, HttpServletRequest httpServletRequest) {
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequestDTO.username(), loginRequestDTO.password()));
+                new UsernamePasswordAuthenticationToken(loginRequest.username(), loginRequest.password()));
 
         if (authentication.isAuthenticated()) {
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            String token = jwtTokenProvider.generateToken();
+            CustomUserDetails customUserDetails = SecurityUtil.getCurrentUser();
+            String token = jwtTokenProvider.generateToken(customUserDetails.getUsername());
 
             return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, "User Login Successfully",
-                    LoginResponseDTO.builder()
+                    LoginResponse.builder()
                             .token(token)
                             .expirationDate(jwtTokenProvider.getExpirationDate(token))
                             .tokenType(AuthConstants.TOKEN_TYPE_BEARER)
-                            .refreshToken(refreshTokenService.createRefreshToken(loginRequestDTO.username()).getToken())
+                            .refreshToken(refreshTokenService.createRefreshToken(loginRequest.username()).getToken())
                             .build(),
                     httpServletRequest.getRequestURI()));
         }
@@ -59,27 +63,27 @@ public class AuthRestController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<?>> register(@RequestBody UserRequestDTO userRequestDTO, HttpServletRequest request) {
-        log.debug("Registration process started for user: {}", userRequestDTO.username());
+    public ResponseEntity<ApiResponse<?>> register(@RequestBody UserRequest userRequest, HttpServletRequest request) {
+        log.debug("Registration process started for user: {}", userRequest.username());
 
         //Check if the user already exists
-        if (userService.existsByUsername(userRequestDTO.username())) {
+        if (userService.existsByUsername(userRequest.username())) {
             return ResponseEntity.badRequest().body(ApiResponse.failure(HttpStatus.CONFLICT, "Username already exists",
                     null,
                     request.getRequestURI()));
         }
 
-        if (userService.existsByEmail(userRequestDTO.email())) {
+        if (userService.existsByEmail(userRequest.email())) {
             return ResponseEntity.badRequest().body(ApiResponse.failure(HttpStatus.CONFLICT, "Email already exists",
                     null,
                     request.getRequestURI()));
         }
 
         //Add the user
-        User user = userService.addUser(userRequestDTO);
+        User user = userService.addUser(userRequest);
         if (Objects.nonNull(user)) {
             return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(HttpStatus.CREATED, "Registration successful!",
-                    UserResponseDTO.builder()
+                    UserResponse.builder()
                             .userId(user.getId())
                             .username(user.getUsername())
                             .email(user.getEmail())
@@ -91,6 +95,25 @@ public class AuthRestController {
         return ResponseEntity.badRequest().body(ApiResponse.failure(HttpStatus.BAD_REQUEST, "Registration failed. Please try again.",
                 null,
                 request.getRequestURI()));
+    }
+
+    @PostMapping("/refresh-token")
+    public ApiResponse<?> refreshToken(RefreshTokenRequest refreshTokenRequest) {
+        refreshTokenService.findByToken(refreshTokenRequest.token())
+                .map(refreshTokenService::verifyRefreshToken)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    String token = jwtTokenProvider.generateToken(user.getUsername());
+                    return ApiResponse.success(HttpStatus.OK, "Token refreshed successfully",
+                            LoginResponse.builder()
+                                    .token(token)
+                                    .expirationDate(jwtTokenProvider.getExpirationDate(token))
+                                    .tokenType(AuthConstants.TOKEN_TYPE_BEARER)
+                                    .refreshToken(refreshTokenService.createRefreshToken(user.getUsername()).getToken())
+                                    .build(),
+                            null);
+                })
+        return null;
     }
 
 }
