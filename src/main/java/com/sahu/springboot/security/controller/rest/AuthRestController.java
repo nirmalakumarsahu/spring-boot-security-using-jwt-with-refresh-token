@@ -1,9 +1,10 @@
-package com.sahu.springboot.security.rest;
+package com.sahu.springboot.security.controller.rest;
 
 import com.sahu.springboot.security.constant.AuthConstants;
 import com.sahu.springboot.security.dto.*;
 import com.sahu.springboot.security.model.User;
 import com.sahu.springboot.security.security.util.JwtTokenProvider;
+import com.sahu.springboot.security.service.RefreshTokenService;
 import com.sahu.springboot.security.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class AuthRestController {
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
+    private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponseDTO>> login(@RequestBody LoginRequestDTO loginRequestDTO, HttpServletRequest httpServletRequest) {
@@ -46,6 +48,7 @@ public class AuthRestController {
                             .token(token)
                             .expirationDate(jwtTokenProvider.getExpirationDate(token))
                             .tokenType(AuthConstants.TOKEN_TYPE_BEARER)
+                            .refreshToken(refreshTokenService.createRefreshToken(loginRequestDTO.username()).getToken())
                             .build(),
                     httpServletRequest.getRequestURI()));
         }
