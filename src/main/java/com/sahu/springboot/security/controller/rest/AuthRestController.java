@@ -63,20 +63,20 @@ public class AuthRestController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<?>> register(@RequestBody UserRequest userRequest, HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<?>> register(@RequestBody UserRequest userRequest, HttpServletRequest httpServletRequest) {
         log.debug("Registration process started for user: {}", userRequest.username());
 
         //Check if the user already exists
         if (userService.existsByUsername(userRequest.username())) {
             return ResponseEntity.badRequest().body(ApiResponse.failure(HttpStatus.CONFLICT, "Username already exists",
                     null,
-                    request.getRequestURI()));
+                    httpServletRequest.getRequestURI()));
         }
 
         if (userService.existsByEmail(userRequest.email())) {
             return ResponseEntity.badRequest().body(ApiResponse.failure(HttpStatus.CONFLICT, "Email already exists",
                     null,
-                    request.getRequestURI()));
+                    httpServletRequest.getRequestURI()));
         }
 
         //Add the user
@@ -88,32 +88,36 @@ public class AuthRestController {
                             .username(user.getUsername())
                             .email(user.getEmail())
                             .build(),
-                    request.getRequestURI()));
+                    httpServletRequest.getRequestURI()));
 
         }
 
         return ResponseEntity.badRequest().body(ApiResponse.failure(HttpStatus.BAD_REQUEST, "Registration failed. Please try again.",
                 null,
-                request.getRequestURI()));
+                httpServletRequest.getRequestURI()));
     }
 
     @PostMapping("/refresh-token")
-    public ApiResponse<?> refreshToken(RefreshTokenRequest refreshTokenRequest) {
-        refreshTokenService.findByToken(refreshTokenRequest.token())
+    public ResponseEntity<ApiResponse<LoginResponse>> refreshToken(RefreshTokenRequest refreshTokenRequest, HttpServletRequest httpServletRequest) {
+        return refreshTokenService.findByToken(refreshTokenRequest.token())
                 .map(refreshTokenService::verifyRefreshToken)
                 .map(RefreshToken::getUser)
                 .map(user -> {
                     String token = jwtTokenProvider.generateToken(user.getUsername());
-                    return ApiResponse.success(HttpStatus.OK, "Token refreshed successfully",
+                    return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, "Token refreshed successfully",
                             LoginResponse.builder()
                                     .token(token)
                                     .expirationDate(jwtTokenProvider.getExpirationDate(token))
                                     .tokenType(AuthConstants.TOKEN_TYPE_BEARER)
-                                    .refreshToken(refreshTokenService.createRefreshToken(user.getUsername()).getToken())
+                                    .refreshToken(refreshTokenRequest.token())
                                     .build(),
-                            null);
-                })
-        return null;
+                            httpServletRequest.getRequestURI()));
+                }).orElse(
+                        ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.failure(HttpStatus.UNAUTHORIZED, "Invalid refresh token",
+                        null,
+                        httpServletRequest.getRequestURI()))
+                );
+
     }
 
 }
