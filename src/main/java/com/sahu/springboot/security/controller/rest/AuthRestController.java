@@ -9,7 +9,6 @@ import com.sahu.springboot.security.security.util.JwtTokenProvider;
 import com.sahu.springboot.security.security.util.SecurityUtil;
 import com.sahu.springboot.security.service.RefreshTokenService;
 import com.sahu.springboot.security.service.UserService;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -37,7 +36,7 @@ public class AuthRestController {
     private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest loginRequest, HttpServletRequest httpServletRequest) {
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest loginRequest) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginRequest.username(), loginRequest.password()));
 
@@ -63,7 +62,7 @@ public class AuthRestController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<?>> register(@RequestBody UserRequest userRequest, HttpServletRequest httpServletRequest) {
+    public ResponseEntity<ApiResponse<?>> register(@RequestBody UserRequest userRequest) {
         log.debug("Registration process started for user: {}", userRequest.username());
 
         //Check if the user already exists
@@ -97,7 +96,7 @@ public class AuthRestController {
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<ApiResponse<LoginResponse>> refreshToken(RefreshTokenRequest refreshTokenRequest, HttpServletRequest httpServletRequest) {
+    public ResponseEntity<ApiResponse<LoginResponse>> refreshToken(RefreshTokenRequest refreshTokenRequest) {
         return refreshTokenService.findByToken(refreshTokenRequest.token())
                 .map(refreshTokenService::verifyRefreshToken)
                 .map(RefreshToken::getUser)
