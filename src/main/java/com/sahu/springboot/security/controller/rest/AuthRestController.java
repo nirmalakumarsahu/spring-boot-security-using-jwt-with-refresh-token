@@ -53,13 +53,13 @@ public class AuthRestController {
                             .expirationDate(jwtTokenProvider.getExpirationDate(token))
                             .tokenType(AuthConstants.TOKEN_TYPE_BEARER)
                             .refreshToken(refreshTokenService.createRefreshToken(loginRequest.username()).getToken())
-                            .build(),
-                    httpServletRequest.getRequestURI()));
+                            .build())
+            );
         }
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.failure(HttpStatus.UNAUTHORIZED, "Invalid username or password",
-                null,
-                httpServletRequest.getRequestURI()));
+                null)
+        );
     }
 
     @PostMapping("/register")
@@ -69,14 +69,14 @@ public class AuthRestController {
         //Check if the user already exists
         if (userService.existsByUsername(userRequest.username())) {
             return ResponseEntity.badRequest().body(ApiResponse.failure(HttpStatus.CONFLICT, "Username already exists",
-                    null,
-                    httpServletRequest.getRequestURI()));
+                    null)
+            );
         }
 
         if (userService.existsByEmail(userRequest.email())) {
             return ResponseEntity.badRequest().body(ApiResponse.failure(HttpStatus.CONFLICT, "Email already exists",
-                    null,
-                    httpServletRequest.getRequestURI()));
+                    null)
+            );
         }
 
         //Add the user
@@ -87,14 +87,13 @@ public class AuthRestController {
                             .userId(user.getId())
                             .username(user.getUsername())
                             .email(user.getEmail())
-                            .build(),
-                    httpServletRequest.getRequestURI()));
-
+                            .build())
+            );
         }
 
         return ResponseEntity.badRequest().body(ApiResponse.failure(HttpStatus.BAD_REQUEST, "Registration failed. Please try again.",
-                null,
-                httpServletRequest.getRequestURI()));
+                null)
+        );
     }
 
     @PostMapping("/refresh-token")
@@ -110,14 +109,12 @@ public class AuthRestController {
                                     .expirationDate(jwtTokenProvider.getExpirationDate(token))
                                     .tokenType(AuthConstants.TOKEN_TYPE_BEARER)
                                     .refreshToken(refreshTokenRequest.token())
-                                    .build(),
-                            httpServletRequest.getRequestURI()));
+                                    .build())
+                    );
                 }).orElse(
                         ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.failure(HttpStatus.UNAUTHORIZED, "Invalid refresh token",
-                        null,
-                        httpServletRequest.getRequestURI()))
+                                null))
                 );
-
     }
 
 }
