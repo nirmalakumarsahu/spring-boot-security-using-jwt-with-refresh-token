@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: spring-boot-security-using-jwt-with-refresh-token
+    name: spring-boot-security-jwt-authentication-with-refresh-token
 
   #MySQL Configuration
   datasource:

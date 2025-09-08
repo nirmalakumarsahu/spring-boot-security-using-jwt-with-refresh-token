@@ -11,10 +11,10 @@
 	</parent>
 
 	<groupId>com.sahu.spring-boot-security</groupId>
-	<artifactId>spring-boot-security-using-jwt-with-refresh-token</artifactId>
+	<artifactId>spring-boot-security-jwt-authentication-with-refresh-tokenn</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>spring-boot-security-using-jwt-with-refresh-token</name>
-	<description>spring-boot-security-using-jwt-with-refresh-token</description>
+	<name>spring-boot-security-jwt-authentication-with-refresh-token</name>
+	<description>spring-boot-security-jwt-authentication-with-refresh-token</description>
 	<url>https://example.com</url>
 
 	<properties>
